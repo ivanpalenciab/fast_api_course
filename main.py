@@ -13,7 +13,7 @@ from pydantic import EmailStr
 from fastapi import FastAPI
 from fastapi import Body
 from fastapi import Query
-from fastapi import Path,Form,Header,Cookie
+from fastapi import Path,Form,Header,Cookie,File,UploadFile
 from fastapi import status
 
 
@@ -202,3 +202,14 @@ def contact(
     return user_agent
 
 #archivos o files
+@app.post(
+    path="/post-image"
+)
+def post_image(
+    image:UploadFile = File(...)
+):
+   return{ 
+    "filename":image.filename,
+    "format":image.content_type,
+    "Size(kb)":round(len(image.file.read())/1024,ndigits=2) #para obter los kilobites tienes que dividir los bites entre 1024 
+    }
