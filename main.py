@@ -1,6 +1,4 @@
 #python
-from dataclasses import field
-from doctest import Example
 from typing import Optional #esto para hacer tipado estatico
 from enum import Enum
 
@@ -11,10 +9,10 @@ from pydantic import EmailStr
 
 #fastAPI
 from fastapi import FastAPI
-from fastapi import Body
-from fastapi import Query
-from fastapi import Path,Form,Header,Cookie,File,UploadFile
 from fastapi import status
+from fastapi import HTTPException
+from fastapi import Body,Query,Path,Form,Header,Cookie,File,UploadFile
+
 
 
 
@@ -101,7 +99,8 @@ class PersonOut(PersonModel):
  #path operation       
 @app.get(
     "/",
-    status_code=status.HTTP_200_OK)
+    status_code=status.HTTP_200_OK,
+    tags=["Home"])
 def home():
     return {"hello":"worl"}
 
@@ -109,14 +108,30 @@ def home():
 @app.post(
     "/person/new",
     response_model=PersonOut,
-    status_code = status.HTTP_201_CREATED)
+    status_code = status.HTTP_201_CREATED,
+    tags=["Persons"],
+    summary="Create person in the app")
 def create_person(person:Person=Body(...)):
+    """
+    Create Person
+
+    This path operation create a person in the app and save information in database.
+    
+    Parameters:
+    -Request body parameter:
+        -**person: Person** ->  A person model with first name, last name, email,hair color, marital status and password 
+    
+    Returns a person model with first name, last name, age, email hair color and marital status
+    
+    """
     return person
 
 #validaciones: query parameters
 
 @app.get("/person/detail/",
-status_code=status.HTTP_200_OK
+status_code=status.HTTP_200_OK,
+tags=["Persons"],
+deprecated=True
 )
 def show_person(
 name: Optional[str]=Query(
@@ -135,7 +150,11 @@ age: str=Query(
     return {name:age}
 
 #validacion: path parameter
-@app.get("/person/detail/{person_id}")
+
+persons =[1,2,3,4,5]
+@app.get(
+    "/person/detail/{person_id}",
+    tags=["Persons"])
 def show_person(
     person_id:int =Path(
         ..., 
@@ -144,10 +163,17 @@ def show_person(
         description="This is the person Id, it's requierd and it shot be grather than 0"
         )
 ):
+    if person_id not in persons:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="this person doesn't exist"
+        )
     return {person_id: "It exists!"}
 
 #validacion request body
-@app.put("/person/person/{person_id}")
+@app.put(
+    path="/person/person/{person_id}",
+    tags=["Persons"])
 def update_person(
     person_id:int=Path(
         ...,
@@ -169,7 +195,8 @@ def update_person(
 @app.post(
     path="/login",
     response_model=LoginOut,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    tags=["autentication"]
 )
 def login(username:str = Form(...),password:str= Form(...)):
     return LoginOut(username=username)
@@ -177,7 +204,8 @@ def login(username:str = Form(...),password:str= Form(...)):
 #Cookies and Headers Parameters
 @app.post(
     path="/contact",
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    tags=["Form"]
 )
 def contact(
     first_name: str = Form(
@@ -203,7 +231,8 @@ def contact(
 
 #archivos o files
 @app.post(
-    path="/post-image"
+    path="/post-image",
+    tags=["imagens"]
 )
 def post_image(
     image:UploadFile = File(...)
@@ -213,3 +242,5 @@ def post_image(
     "format":image.content_type,
     "Size(kb)":round(len(image.file.read())/1024,ndigits=2) #para obter los kilobites tienes que dividir los bites entre 1024 
     }
+
+#http exception
